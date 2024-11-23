@@ -1,0 +1,38 @@
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
+class OTPService {
+    private final ConcurrentHashMap<String, String> otpStore = new ConcurrentHashMap<>();
+    private final Random random = new Random();
+
+    public String generateOTP(String identifier) {
+        String otp = String.format("%06d", random.nextInt(1000000));
+        otpStore.put(identifier, otp);
+        System.out.println("Generated OTP for " + identifier + ": " + otp);
+        new Thread(() -> {
+            try {
+                TimeUnit.SECONDS.sleep(60); // Expiry time
+                otpStore.remove(identifier);
+                System.out.println("OTP expired for " + identifier);
+            } catch (InterruptedException ignored) {}
+        }).start();
+        return otp;
+    }
+
+    public boolean validateOTP(String identifier, String otp) {
+        return otp.equals(otpStore.get(identifier));
+    }
+}
+
+public class OTPVerificationSystem {
+    public static void main(String[] args) {
+        OTPService otpService = new OTPService();
+
+        String identifier = "user@example.com";
+        String otp = otpService.generateOTP(identifier);
+
+        System.out.println("Validating OTP...");
+        System.out.println("Is valid: " + otpService.validateOTP(identifier, otp));
+    }
+}
